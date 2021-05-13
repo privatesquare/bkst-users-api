@@ -11,15 +11,15 @@ const (
 
 type RestErr struct {
 	Message string `json:"message"`
-	Status int `json:"status"`
-	Error string `json:"error"`
+	Status  int    `json:"status"`
+	Error   string `json:"error"`
 }
 
 func NewError(message string, status int, error string) *RestErr {
 	return &RestErr{
 		Message: message,
 		Status:  status,
-		Error: error,
+		Error:   error,
 	}
 }
 
@@ -27,7 +27,7 @@ func BadRequestError(message string) *RestErr {
 	return &RestErr{
 		Message: message,
 		Status:  http.StatusBadRequest,
-		Error: http.StatusText(http.StatusBadRequest),
+		Error:   http.StatusText(http.StatusBadRequest),
 	}
 }
 
@@ -35,7 +35,7 @@ func UnauthorizedError(message string) *RestErr {
 	return &RestErr{
 		Message: message,
 		Status:  http.StatusUnauthorized,
-		Error: http.StatusText(http.StatusUnauthorized),
+		Error:   http.StatusText(http.StatusUnauthorized),
 	}
 }
 
@@ -43,7 +43,7 @@ func ForbiddenError(message string) *RestErr {
 	return &RestErr{
 		Message: message,
 		Status:  http.StatusForbidden,
-		Error: http.StatusText(http.StatusForbidden),
+		Error:   http.StatusText(http.StatusForbidden),
 	}
 }
 
@@ -51,7 +51,7 @@ func NotFoundError(message string) *RestErr {
 	return &RestErr{
 		Message: message,
 		Status:  http.StatusNotFound,
-		Error: http.StatusText(http.StatusNotFound),
+		Error:   http.StatusText(http.StatusNotFound),
 	}
 }
 
@@ -59,7 +59,7 @@ func InternalServerError(message string) *RestErr {
 	return &RestErr{
 		Message: message,
 		Status:  http.StatusInternalServerError,
-		Error: http.StatusText(http.StatusInternalServerError),
+		Error:   http.StatusText(http.StatusInternalServerError),
 	}
 }
 

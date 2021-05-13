@@ -6,7 +6,6 @@ import (
 	"github.com/private-square/bkst-users-api/utils"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 func GetUser(ctx *gin.Context) {
@@ -37,7 +36,6 @@ func CreateUser(ctx *gin.Context) {
 		ctx.JSON(restErr.Status, restErr)
 		return
 	}
-	user.DateCreated = time.Now().Format("2006-01-02T15:04:05-0700")
 	if restErr := user.Create(); restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return

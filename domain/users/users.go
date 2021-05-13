@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	emailRe = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+	emailRe            = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
 	invalidEmailErrMsg = "The email id is not valid."
 )
 
@@ -16,17 +16,17 @@ var (
 	usersDb = make(map[int64]*User)
 )
 
-type InvalidEmailError struct {}
+type InvalidEmailError struct{}
 
 func (e InvalidEmailError) Error() string {
 	return invalidEmailErrMsg
 }
 
 type User struct {
-	Id int64 `json:"id"`
-	FirstName string `json:"firstName"`
-	Lastname string `json:"lastName"`
-	Email string `json:"email"`
+	Id          int64  `json:"id"`
+	FirstName   string `json:"firstName"`
+	Lastname    string `json:"lastName"`
+	Email       string `json:"email"`
 	DateCreated string `json:"dateCreated"`
 }
 
@@ -53,6 +53,12 @@ func (u *User) Create() *utils.RestErr {
 	if current != nil {
 		return utils.BadRequestError(fmt.Sprintf("User %d already exists", u.Id))
 	}
+	for _, user := range usersDb {
+		if user.Email == u.Email {
+			return utils.BadRequestError(fmt.Sprintf("Account already exists for the email id %s", u.Email))
+		}
+	}
+	u.DateCreated = utils.GetDateTimeNowFormat()
 	usersDb[u.Id] = u
 	return nil
 }
