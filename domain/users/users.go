@@ -76,22 +76,20 @@ func (u *User) Create() *utils.RestErr {
 
 func (u *User) Update() *utils.RestErr {
 
-	currentRecord := User{
-		Id: u.Id,
-	}
+	updateInfo := *u
 
-	if err := currentRecord.Get(); err != nil {
+	if err := u.Get(); err != nil {
 		return err
 	}
 
-	if strings.TrimSpace(u.FirstName) != "" {
-		currentRecord.FirstName = u.FirstName
+	if strings.TrimSpace(updateInfo.FirstName) != "" {
+		u.FirstName = updateInfo.FirstName
 	}
-	if strings.TrimSpace(u.Lastname) != "" {
-		currentRecord.Lastname = u.Lastname
+	if strings.TrimSpace(updateInfo.Lastname) != "" {
+		u.Lastname = updateInfo.Lastname
 	}
-	if strings.TrimSpace(u.Email) != "" {
-		currentRecord.Email = u.Email
+	if strings.TrimSpace(updateInfo.Email) != "" {
+		u.Email = updateInfo.Email
 	}
 
 	stmt, err := services.UsersDbClient.Prepare(queryUpdateUser)
@@ -100,10 +98,11 @@ func (u *User) Update() *utils.RestErr {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(currentRecord.FirstName, currentRecord.Lastname, currentRecord.Email, currentRecord.Id)
+	_, err = stmt.Exec(u.FirstName, u.Lastname, u.Email, u.Id)
 	if err := u.handleQueryExecError(err); err != nil {
 		return err
 	}
+
 	return nil
 }
 

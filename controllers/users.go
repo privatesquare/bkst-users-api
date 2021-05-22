@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/private-square/bkst-users-api/domain/users"
 	"github.com/private-square/bkst-users-api/utils"
@@ -10,11 +9,12 @@ import (
 )
 
 func GetUser(ctx *gin.Context) {
-	user, err := parseUserId(ctx)
+	userId, err := parseUserId(ctx)
 	if err != nil {
 		ctx.JSON(err.Status, err)
 		return
 	}
+	user := users.User{Id: *userId}
 	if restErr := user.Get(); restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
@@ -41,37 +41,34 @@ func CreateUser(ctx *gin.Context) {
 }
 
 func UpdateUser(ctx *gin.Context) {
-	user, err := parseUserId(ctx)
+	userId, err := parseUserId(ctx)
 	if err != nil {
 		ctx.JSON(err.Status, err)
 		return
 	}
-	userInfo, err := parseUserInfo(ctx)
+	user, err := parseUserInfo(ctx)
 	if err != nil {
 		ctx.JSON(err.Status, err)
 		return
 	}
-	userInfo.Id = user.Id
-	if restErr := userInfo.Update(); restErr != nil {
+	user.Id = *userId
+	if restErr := user.Update(); restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
 	}
-	ctx.JSON(http.StatusOK, utils.RestMsg{Message: fmt.Sprintf("User with id %d was updated", userInfo.Id)})
+	ctx.JSON(http.StatusOK, user)
 }
 
 func DeleteUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusNotImplemented, utils.RestMsg{Message: "not implemented yet"})
 }
 
-func parseUserId(ctx *gin.Context) (*users.User, *utils.RestErr) {
+func parseUserId(ctx *gin.Context) (*int64, *utils.RestErr) {
 	userId, err := strconv.ParseInt(ctx.Param("userId"), 10, 64)
 	if err != nil {
 		return nil, utils.BadRequestError("invalid user id")
 	}
-	user := users.User{
-		Id: userId,
-	}
-	return &user, nil
+	return &userId, nil
 }
 
 func parseUserInfo(ctx *gin.Context) (*users.User, *utils.RestErr) {
