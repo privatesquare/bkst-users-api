@@ -3,7 +3,7 @@ package utils
 import "time"
 
 const (
-	dateTimeFormat = "2006-01-02T15:04:05-0700"
+	dateTimeFormat = "2006-01-02 15:04:05.000000"
 )
 
 type DateTime time.Time
