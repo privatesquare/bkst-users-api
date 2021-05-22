@@ -90,6 +90,9 @@ func (u *User) Update() *utils.RestErr {
 	}
 	if strings.TrimSpace(updateInfo.Email) != "" {
 		u.Email = updateInfo.Email
+		if err := u.validateEmail(); err != nil {
+			return utils.BadRequestError(err.Error())
+		}
 	}
 
 	stmt, err := services.UsersDbClient.Prepare(queryUpdateUser)
