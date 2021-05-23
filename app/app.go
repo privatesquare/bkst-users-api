@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/private-square/bkst-users-api/controllers"
-	"github.com/private-square/bkst-users-api/services"
+	"github.com/private-square/bkst-users-api/domain/users"
 	"github.com/private-square/bkst-users-api/utils"
 	"log"
 	"os"
@@ -15,7 +15,7 @@ func StartApp() {
 	r := NewRouter()
 	SetupRoutes(r)
 
-	udb := &services.UsersDbConn{
+	udb := &users.UserDbConn{
 		Hostname: os.Getenv("USERSDB_HOST"),
 		Port:     os.Getenv("USERSDB_PORT"),
 		Schema:   os.Getenv("USERSDB_SCHEMA"),

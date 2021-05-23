@@ -2,27 +2,70 @@ package users
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
-	"github.com/private-square/bkst-users-api/services"
 	"github.com/private-square/bkst-users-api/utils"
 	"regexp"
 	"strings"
 )
 
 const (
-	emailRe            = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+	emailRegex         = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
 	invalidEmailErrMsg = "The email id is not valid."
+
+	usersDbDriveName            = "mysql"
+	usersDbDataSourceNameFormat = "%s:%s@tcp(%s:%s)/%s?charset=utf8"
+	usersDbConnErrMsg           = "Users Db connection error : %v"
+	usersDbConnSuccessMsg       = "Successfully connected to the Users database."
+	usersDbEmailUniqueStr       = "email_UNIQUE"
+
+	userNotFoundMsg     = "User with id %d was not found"
+	emailAlreadyUsedMsg = "Email id %s is already in use."
 
 	querySelectUserById = "SELECT id, first_name, last_name, email, date_created, date_updated FROM users WHERE id=?;"
 	queryInsertUser     = "INSERT INTO users(first_name, last_name, email) VALUES(?, ?, ?);"
 	queryUpdateUser     = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
-	queryDeleteUser		= "DELETE FROM users WHERE id=?;"
+	queryDeleteUser     = "DELETE FROM users WHERE id=?;"
+)
+
+var (
+	UserDbClient *sql.DB
 )
 
 type InvalidEmailError struct{}
 
 func (e InvalidEmailError) Error() string {
 	return invalidEmailErrMsg
+}
+
+type UserDbConn struct {
+	Hostname string
+	Port     string
+	Schema   string
+	Username string
+	Password string
+}
+
+func (db *UserDbConn) Open() error {
+	var err error
+	dataSourceName := fmt.Sprintf(usersDbDataSourceNameFormat,
+		db.Username,
+		db.Password,
+		db.Hostname,
+		db.Port,
+		db.Schema)
+	if UserDbClient, err = sql.Open(usersDbDriveName, dataSourceName); err != nil {
+		return errors.New(fmt.Sprintf(usersDbConnErrMsg, err))
+	}
+	if err := UserDbClient.Ping(); err != nil {
+		return errors.New(fmt.Sprintf(usersDbConnErrMsg, err))
+	}
+	fmt.Println(usersDbConnSuccessMsg)
+	return nil
+}
+
+func (db *UserDbConn) Close() {
+	_ = UserDbClient.Close()
 }
 
 type User struct {
@@ -35,7 +78,7 @@ type User struct {
 }
 
 func (u *User) Get() *utils.RestErr {
-	stmt, err := services.UsersDbClient.Prepare(querySelectUserById)
+	stmt, err := UserDbClient.Prepare(querySelectUserById)
 	if err != nil {
 		return utils.InternalServerError(err.Error())
 	}
@@ -46,18 +89,14 @@ func (u *User) Get() *utils.RestErr {
 	case err == nil:
 		return nil
 	case err == sql.ErrNoRows:
-		return utils.NotFoundError(fmt.Sprintf("User with id %d was not found", u.Id))
+		return utils.NotFoundError(fmt.Sprintf(userNotFoundMsg, u.Id))
 	default:
 		return utils.InternalServerError(err.Error())
 	}
 }
 
 func (u *User) Create() *utils.RestErr {
-	if err := u.validate(); err != nil {
-		return utils.BadRequestError(err.Error())
-	}
-
-	stmt, err := services.UsersDbClient.Prepare(queryInsertUser)
+	stmt, err := UserDbClient.Prepare(queryInsertUser)
 	if err != nil {
 		return utils.InternalServerError(err.Error())
 	}
@@ -75,27 +114,7 @@ func (u *User) Create() *utils.RestErr {
 }
 
 func (u *User) Update() *utils.RestErr {
-
-	updateInfo := *u
-
-	if err := u.Get(); err != nil {
-		return err
-	}
-
-	if strings.TrimSpace(updateInfo.FirstName) != "" {
-		u.FirstName = updateInfo.FirstName
-	}
-	if strings.TrimSpace(updateInfo.Lastname) != "" {
-		u.Lastname = updateInfo.Lastname
-	}
-	if strings.TrimSpace(updateInfo.Email) != "" {
-		u.Email = updateInfo.Email
-		if err := u.validateEmail(); err != nil {
-			return utils.BadRequestError(err.Error())
-		}
-	}
-
-	stmt, err := services.UsersDbClient.Prepare(queryUpdateUser)
+	stmt, err := UserDbClient.Prepare(queryUpdateUser)
 	if err != nil {
 		return utils.InternalServerError(err.Error())
 	}
@@ -110,7 +129,7 @@ func (u *User) Update() *utils.RestErr {
 }
 
 func (u *User) Delete() *utils.RestErr {
-	stmt, err := services.UsersDbClient.Prepare(queryDeleteUser)
+	stmt, err := UserDbClient.Prepare(queryDeleteUser)
 	if err != nil {
 		return utils.InternalServerError(err.Error())
 	}
@@ -124,17 +143,17 @@ func (u *User) Delete() *utils.RestErr {
 	if rowsAffected, err := result.RowsAffected(); err != nil {
 		return utils.InternalServerError(err.Error())
 	} else if rowsAffected == 0 {
-		return utils.NotFoundError(fmt.Sprintf("User with id %d was not found", u.Id))
+		return utils.NotFoundError(fmt.Sprintf(userNotFoundMsg, u.Id))
 	} else {
 		return nil
 	}
 }
 
-func (u *User) validate() error {
+func (u *User) Validate() error {
 	if err := u.validateNotEmpty(); err != nil {
 		return err
 	}
-	if err := u.validateEmail(); err != nil {
+	if err := u.ValidateEmail(); err != nil {
 		return err
 	}
 	return nil
@@ -160,8 +179,8 @@ func (u *User) validateNotEmpty() error {
 	return nil
 }
 
-func (u *User) validateEmail() error {
-	pattern := regexp.MustCompile(emailRe)
+func (u *User) ValidateEmail() error {
+	pattern := regexp.MustCompile(emailRegex)
 	if !pattern.MatchString(u.Email) {
 		return InvalidEmailError{}
 	}
@@ -172,8 +191,8 @@ func (u *User) validateEmail() error {
 func (u *User) handleQueryExecError(err error) *utils.RestErr {
 	if err == nil {
 		return nil
-	} else if strings.Contains(err.Error(), "email_UNIQUE") {
-		return utils.BadRequestError(fmt.Sprintf("Email id %s is already in use.", u.Email))
+	} else if strings.Contains(err.Error(), usersDbEmailUniqueStr) {
+		return utils.BadRequestError(fmt.Sprintf(emailAlreadyUsedMsg, u.Email))
 	} else {
 		return utils.InternalServerError(err.Error())
 	}

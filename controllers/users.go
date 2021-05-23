@@ -4,9 +4,18 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/private-square/bkst-users-api/domain/users"
+	"github.com/private-square/bkst-users-api/services"
 	"github.com/private-square/bkst-users-api/utils"
 	"net/http"
 	"strconv"
+)
+
+const (
+	userCreatedMsg    = "User with id %d was created"
+	userUpdatedMsg    = "User with id %d was updated"
+	userDeletedMsg    = "User with id %d was deleted"
+	invalidUserIdMsg  = "invalid user id"
+	invalidPayloadMsg = "invalid payload"
 )
 
 func GetUser(ctx *gin.Context) {
@@ -15,8 +24,10 @@ func GetUser(ctx *gin.Context) {
 		ctx.JSON(err.Status, err)
 		return
 	}
-	user := users.User{Id: *userId}
-	if restErr := user.Get(); restErr != nil {
+	user := new(users.User)
+	user.Id = *userId
+	user, restErr := services.GetUser(user)
+	if restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
 	}
@@ -33,11 +44,12 @@ func CreateUser(ctx *gin.Context) {
 		ctx.JSON(err.Status, err)
 		return
 	}
-	if restErr := user.Create(); restErr != nil {
+	user, restErr := services.CreateUser(user)
+	if restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
 	}
-	ctx.JSON(http.StatusCreated, utils.RestMsg{Message: fmt.Sprintf("User with id %d was created", user.Id)})
+	ctx.JSON(http.StatusCreated, utils.RestMsg{Message: fmt.Sprintf(userCreatedMsg, user.Id)})
 }
 
 func UpdateUser(ctx *gin.Context) {
@@ -52,11 +64,11 @@ func UpdateUser(ctx *gin.Context) {
 		return
 	}
 	user.Id = *userId
-	if restErr := user.Update(); restErr != nil {
+	if restErr := services.UpdateUser(user); restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
 	}
-	ctx.JSON(http.StatusCreated, utils.RestMsg{Message: fmt.Sprintf("User with id %d was updated", user.Id)})
+	ctx.JSON(http.StatusCreated, utils.RestMsg{Message: fmt.Sprintf(userUpdatedMsg, user.Id)})
 }
 
 func DeleteUser(ctx *gin.Context) {
@@ -65,18 +77,19 @@ func DeleteUser(ctx *gin.Context) {
 		ctx.JSON(err.Status, err)
 		return
 	}
-	user := users.User{Id: *userId}
-	if restErr := user.Delete(); restErr != nil {
+	user := new(users.User)
+	user.Id = *userId
+	if restErr := services.DeleteUser(user); restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
 	}
-	ctx.JSON(http.StatusCreated, utils.RestMsg{Message: fmt.Sprintf("User with id %d was deleted", user.Id)})
+	ctx.JSON(http.StatusCreated, utils.RestMsg{Message: fmt.Sprintf(userDeletedMsg, user.Id)})
 }
 
 func parseUserId(ctx *gin.Context) (*int64, *utils.RestErr) {
 	userId, err := strconv.ParseInt(ctx.Param("userId"), 10, 64)
 	if err != nil {
-		return nil, utils.BadRequestError("invalid user id")
+		return nil, utils.BadRequestError(invalidUserIdMsg)
 	}
 	return &userId, nil
 }
@@ -84,7 +97,7 @@ func parseUserId(ctx *gin.Context) (*int64, *utils.RestErr) {
 func parseUserInfo(ctx *gin.Context) (*users.User, *utils.RestErr) {
 	user := new(users.User)
 	if err := ctx.ShouldBindJSON(user); err != nil {
-		return nil, utils.BadRequestError("invalid payload")
+		return nil, utils.BadRequestError(invalidPayloadMsg)
 	}
 	return user, nil
 }
