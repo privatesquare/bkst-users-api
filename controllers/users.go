@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/private-square/bkst-users-api/domain/users"
 	"github.com/private-square/bkst-users-api/utils"
@@ -36,8 +37,7 @@ func CreateUser(ctx *gin.Context) {
 		ctx.JSON(restErr.Status, restErr)
 		return
 	}
-	//ctx.JSON(http.StatusCreated, utils.RestMsg{Message: fmt.Sprintf("User with id %d was created", user.Id)})
-	ctx.JSON(http.StatusCreated, user)
+	ctx.JSON(http.StatusCreated, utils.RestMsg{Message: fmt.Sprintf("User with id %d was created", user.Id)})
 }
 
 func UpdateUser(ctx *gin.Context) {
@@ -56,7 +56,7 @@ func UpdateUser(ctx *gin.Context) {
 		ctx.JSON(restErr.Status, restErr)
 		return
 	}
-	ctx.JSON(http.StatusOK, user)
+	ctx.JSON(http.StatusCreated, utils.RestMsg{Message: fmt.Sprintf("User with id %d was updated", user.Id)})
 }
 
 func DeleteUser(ctx *gin.Context) {

@@ -10,3 +10,6 @@ bkst-users-api
 
 # Docker
 docker-context
+
+# Others
+db-queries.md

@@ -13,8 +13,8 @@ const (
 	emailRe            = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
 	invalidEmailErrMsg = "The email id is not valid."
 
-	querySelectUserById = "SELECT id, first_name, last_name, email, date_created FROM users WHERE id=?;"
-	queryInsertUser     = "INSERT INTO users(first_name, last_name, email, date_created) VALUES(?, ?, ?, ?);"
+	querySelectUserById = "SELECT id, first_name, last_name, email, date_created, date_updated FROM users WHERE id=?;"
+	queryInsertUser     = "INSERT INTO users(first_name, last_name, email) VALUES(?, ?, ?);"
 	queryUpdateUser     = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
 )
 
@@ -30,6 +30,7 @@ type User struct {
 	Lastname    string `json:"lastName"`
 	Email       string `json:"email"`
 	DateCreated string `json:"dateCreated"`
+	DateUpdated string `json:"dateUpdated"`
 }
 
 func (u *User) Get() *utils.RestErr {
@@ -39,7 +40,7 @@ func (u *User) Get() *utils.RestErr {
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(u.Id).Scan(&u.Id, &u.FirstName, &u.Lastname, &u.Email, &u.DateCreated)
+	err = stmt.QueryRow(u.Id).Scan(&u.Id, &u.FirstName, &u.Lastname, &u.Email, &u.DateCreated, &u.DateUpdated)
 	switch {
 	case err == nil:
 		return nil
@@ -61,9 +62,7 @@ func (u *User) Create() *utils.RestErr {
 	}
 	defer stmt.Close()
 
-	u.DateCreated = utils.GetDateTimeNowFormat()
-
-	result, err := stmt.Exec(u.FirstName, u.Lastname, u.Email, u.DateCreated)
+	result, err := stmt.Exec(u.FirstName, u.Lastname, u.Email)
 	if err := u.handleQueryExecError(err); err != nil {
 		return err
 	}
