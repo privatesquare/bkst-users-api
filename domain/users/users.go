@@ -16,6 +16,7 @@ const (
 	querySelectUserById = "SELECT id, first_name, last_name, email, date_created, date_updated FROM users WHERE id=?;"
 	queryInsertUser     = "INSERT INTO users(first_name, last_name, email) VALUES(?, ?, ?);"
 	queryUpdateUser     = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
+	queryDeleteUser		= "DELETE FROM users WHERE id=?;"
 )
 
 type InvalidEmailError struct{}
@@ -106,6 +107,27 @@ func (u *User) Update() *utils.RestErr {
 	}
 
 	return nil
+}
+
+func (u *User) Delete() *utils.RestErr {
+	stmt, err := services.UsersDbClient.Prepare(queryDeleteUser)
+	if err != nil {
+		return utils.InternalServerError(err.Error())
+	}
+	defer stmt.Close()
+
+	result, err := stmt.Exec(u.Id)
+	if err := u.handleQueryExecError(err); err != nil {
+		return err
+	}
+
+	if rowsAffected, err := result.RowsAffected(); err != nil {
+		return utils.InternalServerError(err.Error())
+	} else if rowsAffected == 0 {
+		return utils.NotFoundError(fmt.Sprintf("User with id %d was not found", u.Id))
+	} else {
+		return nil
+	}
 }
 
 func (u *User) validate() error {

@@ -60,7 +60,17 @@ func UpdateUser(ctx *gin.Context) {
 }
 
 func DeleteUser(ctx *gin.Context) {
-	ctx.JSON(http.StatusNotImplemented, utils.RestMsg{Message: "not implemented yet"})
+	userId, err := parseUserId(ctx)
+	if err != nil {
+		ctx.JSON(err.Status, err)
+		return
+	}
+	user := users.User{Id: *userId}
+	if restErr := user.Delete(); restErr != nil {
+		ctx.JSON(restErr.Status, restErr)
+		return
+	}
+	ctx.JSON(http.StatusCreated, utils.RestMsg{Message: fmt.Sprintf("User with id %d was deleted", user.Id)})
 }
 
 func parseUserId(ctx *gin.Context) (*int64, *utils.RestErr) {
