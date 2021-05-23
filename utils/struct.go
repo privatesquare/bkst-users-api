@@ -1,6 +1,9 @@
 package utils
 
-import "reflect"
+import (
+	"reflect"
+	"strings"
+)
 
 func GetFieldTagValue(structPointer interface{}, fieldPointer interface{}) string {
 
@@ -22,5 +25,5 @@ func GetFieldTagValue(structPointer interface{}, fieldPointer interface{}) strin
 		}
 	}
 
-	return tagValue
+	return strings.Split(tagValue, ",")[0]
 }

@@ -12,8 +12,12 @@ func GetUser(u *users.User) (*users.User, *utils.RestErr) {
 	return u, restErr
 }
 
-func SearchUser(u *users.User) (*users.User, *utils.RestErr) {
-	return u, nil
+func FindUser(u *users.User) (*[]users.User, *utils.RestErr) {
+	if err := u.ValidateStatus(); err != nil {
+		return nil, utils.BadRequestError(err.Error())
+	}
+	usersList, restErr := u.FindByStatus()
+	return &usersList, restErr
 }
 
 func CreateUser(u *users.User) (*users.User, *utils.RestErr) {

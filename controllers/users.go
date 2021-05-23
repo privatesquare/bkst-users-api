@@ -35,7 +35,17 @@ func GetUser(ctx *gin.Context) {
 }
 
 func SearchUser(ctx *gin.Context) {
-	ctx.JSON(http.StatusNotImplemented, utils.RestMsg{Message: "not implemented yet"})
+	user, err := parseUserInfo(ctx)
+	if err != nil {
+		ctx.JSON(err.Status, err)
+		return
+	}
+	usersList, restErr := services.FindUser(user)
+	if restErr != nil {
+		ctx.JSON(restErr.Status, restErr)
+		return
+	}
+	ctx.JSON(http.StatusOK, usersList)
 }
 
 func CreateUser(ctx *gin.Context) {

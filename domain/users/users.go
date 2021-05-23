@@ -12,6 +12,7 @@ import (
 const (
 	emailRegex         = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
 	invalidEmailErrMsg = "The email id is not valid."
+	invalidStatusErrMsg = "Invalid status '%s'. Valid Status's: %v"
 
 	usersDbDriveName            = "mysql"
 	usersDbDataSourceNameFormat = "%s:%s@tcp(%s:%s)/%s?charset=utf8"
@@ -22,20 +23,31 @@ const (
 	userNotFoundMsg     = "User with id %d was not found"
 	emailAlreadyUsedMsg = "Email id %s is already in use."
 
-	querySelectUserById = "SELECT id, first_name, last_name, email, date_created, date_updated FROM users WHERE id=?;"
-	queryInsertUser     = "INSERT INTO users(first_name, last_name, email) VALUES(?, ?, ?);"
-	queryUpdateUser     = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
-	queryDeleteUser     = "DELETE FROM users WHERE id=?;"
+	querySelectUserById     = "SELECT id, first_name, last_name, email, status, date_created, date_updated FROM users WHERE id=?;"
+	querySelectUserByStatus = "SELECT id, first_name, last_name, email, status, date_created, date_updated FROM users WHERE status=?;"
+	queryInsertUser         = "INSERT INTO users(first_name, last_name, email, status, password) VALUES(?, ?, ?, ?, ?);"
+	queryUpdateUser         = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
+	queryDeleteUser         = "DELETE FROM users WHERE id=?;"
 )
 
 var (
 	UserDbClient *sql.DB
+	validStatusList = []string{"Active", "Inactive"}
 )
 
 type InvalidEmailError struct{}
 
 func (e InvalidEmailError) Error() string {
 	return invalidEmailErrMsg
+}
+
+type InvalidStatusError struct {
+	invalidStatus string
+	validStatusList []string
+}
+
+func (e InvalidStatusError) Error() string {
+	return fmt.Sprintf(invalidStatusErrMsg, e.invalidStatus, e.validStatusList)
 }
 
 type UserDbConn struct {
@@ -73,6 +85,8 @@ type User struct {
 	FirstName   string `json:"firstName"`
 	Lastname    string `json:"lastName"`
 	Email       string `json:"email"`
+	Status      string `json:"status"`
+	Password    string `json:"password,omitempty"`
 	DateCreated string `json:"dateCreated"`
 	DateUpdated string `json:"dateUpdated"`
 }
@@ -84,7 +98,7 @@ func (u *User) Get() *utils.RestErr {
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(u.Id).Scan(&u.Id, &u.FirstName, &u.Lastname, &u.Email, &u.DateCreated, &u.DateUpdated)
+	err = stmt.QueryRow(u.Id).Scan(&u.Id, &u.FirstName, &u.Lastname, &u.Email, &u.Status, &u.DateCreated, &u.DateUpdated)
 	switch {
 	case err == nil:
 		return nil
@@ -95,6 +109,34 @@ func (u *User) Get() *utils.RestErr {
 	}
 }
 
+func (u *User) FindByStatus() ([]User, *utils.RestErr) {
+	stmt, err := UserDbClient.Prepare(querySelectUserByStatus)
+	if err != nil {
+		return nil, utils.InternalServerError(err.Error())
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(u.Status)
+	if err != nil {
+		return nil, utils.InternalServerError(err.Error())
+	}
+	var users []User
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(&user.Id, &user.FirstName, &user.Lastname, &user.Email, &user.Status, &user.DateCreated, &user.DateUpdated); err != nil {
+			return nil, utils.InternalServerError(err.Error())
+		}
+		users = append(users, user)
+	}
+	defer rows.Close()
+
+	if len(users) > 0 {
+		return users, nil
+	} else {
+		return []User{}, nil
+	}
+}
+
 func (u *User) Create() *utils.RestErr {
 	stmt, err := UserDbClient.Prepare(queryInsertUser)
 	if err != nil {
@@ -102,7 +144,7 @@ func (u *User) Create() *utils.RestErr {
 	}
 	defer stmt.Close()
 
-	result, err := stmt.Exec(u.FirstName, u.Lastname, u.Email)
+	result, err := stmt.Exec(u.FirstName, u.Lastname, u.Email, u.Status, u.Password)
 	if err := u.handleQueryExecError(err); err != nil {
 		return err
 	}
@@ -171,6 +213,12 @@ func (u *User) validateNotEmpty() error {
 	if strings.TrimSpace(u.Email) == "" {
 		missingParams = append(missingParams, utils.GetFieldTagValue(u, &u.Email))
 	}
+	if strings.TrimSpace(u.Status) == "" {
+		missingParams = append(missingParams, utils.GetFieldTagValue(u, &u.Status))
+	}
+	if strings.TrimSpace(u.Password) == "" {
+		missingParams = append(missingParams, utils.GetFieldTagValue(u, &u.Password))
+	}
 
 	if len(missingParams) > 0 {
 		return utils.MissingMandatoryParamError(missingParams)
@@ -185,6 +233,16 @@ func (u *User) ValidateEmail() error {
 		return InvalidEmailError{}
 	}
 	u.Email = strings.ToLower(u.Email)
+	return nil
+}
+
+func (u *User) ValidateStatus() error {
+	if !utils.EntryExists(validStatusList, u.Status){
+		return InvalidStatusError{
+			invalidStatus:     u.Status,
+			validStatusList: validStatusList,
+		}
+	}
 	return nil
 }
 
