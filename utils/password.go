@@ -1,8 +1,13 @@
 package utils
 
 import (
-	"fmt"
-	"math/rand"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"io"
+	mr "math/rand"
 	"time"
 	"unicode"
 )
@@ -10,16 +15,16 @@ import (
 // GetRandomPassword generates a random string of upper + lower case alphabets and digits
 // which is 23 bits long and returns the string
 func GetRandomPassword() string {
-	rand.Seed(time.Now().UnixNano())
+	mr.Seed(time.Now().UnixNano())
 	digits := "0123456789"
 	all := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" + digits
 	length := 23
 	buf := make([]byte, length)
-	buf[0] = digits[rand.Intn(len(digits))]
+	buf[0] = digits[mr.Intn(len(digits))]
 	for i := 1; i < length; i++ {
-		buf[i] = all[rand.Intn(len(all))]
+		buf[i] = all[mr.Intn(len(all))]
 	}
-	rand.Shuffle(len(buf), func(i, j int) {
+	mr.Shuffle(len(buf), func(i, j int) {
 		buf[i], buf[j] = buf[j], buf[i]
 	})
 	return string(buf)
@@ -46,10 +51,51 @@ func VerifyPassword(password string) error {
 			numOfLetters++
 		}
 	}
-	fmt.Println(numOfLetters, number, upper, lower, special)
 	if numOfLetters > 8 && number && upper && lower && special {
 		return nil
 	} else {
 		return InvalidPasswordError
 	}
+}
+
+func createSHA256Hash(key string) []byte {
+	hash := sha256.Sum256([]byte(key))
+	return hash[:]
+}
+
+func EncryptPassword(data, passphrase string) (string, error) {
+	block, _ := aes.NewCipher(createSHA256Hash(passphrase))
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", PasswordEncryptionError{err: err}
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", PasswordEncryptionError{err: err}
+	}
+	ciphertext := gcm.Seal(nonce, nonce, []byte(data), nil)
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
+}
+
+func DecryptPassword(data, passphrase string) (string, error) {
+	bData, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return "", PasswordDecryptionError{err: err}
+	}
+	key := createSHA256Hash(passphrase)
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", PasswordDecryptionError{err: err}
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", PasswordDecryptionError{err: err}
+	}
+	nonceSize := gcm.NonceSize()
+	nonce, ciphertext := bData[:nonceSize], bData[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", PasswordDecryptionError{err: err}
+	}
+	return string(plaintext), nil
 }

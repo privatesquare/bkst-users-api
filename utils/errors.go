@@ -9,6 +9,8 @@ import (
 const (
 	missingMandatoryParamErrMsg = "Missing mandatory parameter(s) : %v"
 	invalidPasswordErrMsg       = "password should be at least 8 characters long with at least one number, one uppercase letter, one lowercase letter and one special character"
+	passwordEncryptionErrMsg    = "password encryption error: %v"
+	passwordDecryptionErrMsg    = "password decryption error: %v"
 )
 
 var (
@@ -75,4 +77,20 @@ type MissingMandatoryParamError []string
 // Error returns the formatted MissingMandatoryParamError
 func (e MissingMandatoryParamError) Error() string {
 	return fmt.Sprintf(missingMandatoryParamErrMsg, []string(e))
+}
+
+type PasswordEncryptionError struct {
+	err error
+}
+
+func (e PasswordEncryptionError) Error() string {
+	return fmt.Sprintf(passwordEncryptionErrMsg, e.err)
+}
+
+type PasswordDecryptionError struct {
+	err error
+}
+
+func (e PasswordDecryptionError) Error() string {
+	return fmt.Sprintf(passwordDecryptionErrMsg, e.err)
 }

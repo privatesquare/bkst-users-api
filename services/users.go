@@ -21,11 +21,17 @@ func FindUser(u *users.User) (*[]users.User, *utils.RestErr) {
 }
 
 func CreateUser(u *users.User) (*users.User, *utils.RestErr) {
+	var err error
 	if err := u.Validate(); err != nil {
 		return nil, utils.BadRequestError(err.Error())
 	}
 	u.DateCreated = utils.GetDateTimeNowFormat()
 	u.DateUpdated = utils.GetDateTimeNowFormat()
+
+	if u.Password, err = utils.EncryptPassword(u.Password, ""); err != nil {
+		return nil, utils.InternalServerError(err.Error())
+	}
+
 	restErr := u.Create()
 	return u, restErr
 }
