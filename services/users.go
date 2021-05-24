@@ -7,12 +7,26 @@ import (
 	"strings"
 )
 
-func GetUser(u *users.User) (*users.User, *utils.RestErr) {
+var (
+	UsersService usersServiceInterface = &usersService{}
+)
+
+type usersService struct{}
+
+type usersServiceInterface interface {
+	Get(*users.User) (*users.User, *utils.RestErr)
+	Find(*users.User) (*[]users.User, *utils.RestErr)
+	Create(*users.User) (*users.User, *utils.RestErr)
+	Update(*users.User) *utils.RestErr
+	Delete(*users.User) *utils.RestErr
+}
+
+func (s *usersService) Get(u *users.User) (*users.User, *utils.RestErr) {
 	restErr := u.Get()
 	return u, restErr
 }
 
-func FindUser(u *users.User) (*[]users.User, *utils.RestErr) {
+func (s *usersService) Find(u *users.User) (*[]users.User, *utils.RestErr) {
 	if err := u.ValidateStatus(); err != nil {
 		return nil, utils.BadRequestError(err.Error())
 	}
@@ -20,7 +34,7 @@ func FindUser(u *users.User) (*[]users.User, *utils.RestErr) {
 	return &usersList, restErr
 }
 
-func CreateUser(u *users.User) (*users.User, *utils.RestErr) {
+func (s *usersService) Create(u *users.User) (*users.User, *utils.RestErr) {
 	var err error
 	if err := u.Validate(); err != nil {
 		return nil, utils.BadRequestError(err.Error())
@@ -36,7 +50,7 @@ func CreateUser(u *users.User) (*users.User, *utils.RestErr) {
 	return u, restErr
 }
 
-func UpdateUser(u *users.User) *utils.RestErr {
+func (s *usersService) Update(u *users.User) *utils.RestErr {
 	updateInfo := *u
 
 	if err := u.Get(); err != nil {
@@ -61,7 +75,7 @@ func UpdateUser(u *users.User) *utils.RestErr {
 	return restErr
 }
 
-func DeleteUser(u *users.User) *utils.RestErr {
+func (s *usersService) Delete(u *users.User) *utils.RestErr {
 	restErr := u.Delete()
 	return restErr
 }

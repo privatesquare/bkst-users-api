@@ -26,7 +26,7 @@ func GetUser(ctx *gin.Context) {
 	}
 	user := new(users.User)
 	user.Id = *userId
-	user, restErr := services.GetUser(user)
+	user, restErr := services.UsersService.Get(user)
 	if restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
@@ -36,7 +36,7 @@ func GetUser(ctx *gin.Context) {
 
 func SearchUser(ctx *gin.Context) {
 	user := users.User{Status: parseStatus(ctx)}
-	usersList, restErr := services.FindUser(&user)
+	usersList, restErr := services.UsersService.Find(&user)
 	if restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
@@ -50,7 +50,7 @@ func CreateUser(ctx *gin.Context) {
 		ctx.JSON(err.Status, err)
 		return
 	}
-	user, restErr := services.CreateUser(user)
+	user, restErr := services.UsersService.Create(user)
 	if restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
@@ -70,7 +70,7 @@ func UpdateUser(ctx *gin.Context) {
 		return
 	}
 	user.Id = *userId
-	if restErr := services.UpdateUser(user); restErr != nil {
+	if restErr := services.UsersService.Update(user); restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
 	}
@@ -85,7 +85,7 @@ func DeleteUser(ctx *gin.Context) {
 	}
 	user := new(users.User)
 	user.Id = *userId
-	if restErr := services.DeleteUser(user); restErr != nil {
+	if restErr := services.UsersService.Delete(user); restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
 	}
