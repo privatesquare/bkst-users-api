@@ -24,6 +24,8 @@ func CreateUser(u *users.User) (*users.User, *utils.RestErr) {
 	if err := u.Validate(); err != nil {
 		return nil, utils.BadRequestError(err.Error())
 	}
+	u.DateCreated = utils.GetDateTimeNowFormat()
+	u.DateUpdated = utils.GetDateTimeNowFormat()
 	restErr := u.Create()
 	return u, restErr
 }
@@ -47,6 +49,8 @@ func UpdateUser(u *users.User) *utils.RestErr {
 			return utils.BadRequestError(err.Error())
 		}
 	}
+
+	u.DateUpdated = utils.GetDateTimeNowFormat()
 	restErr := u.Update()
 	return restErr
 }

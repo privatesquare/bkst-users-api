@@ -35,12 +35,8 @@ func GetUser(ctx *gin.Context) {
 }
 
 func SearchUser(ctx *gin.Context) {
-	user, err := parseUserInfo(ctx)
-	if err != nil {
-		ctx.JSON(err.Status, err)
-		return
-	}
-	usersList, restErr := services.FindUser(user)
+	user := users.User{Status: parseStatus(ctx)}
+	usersList, restErr := services.FindUser(&user)
 	if restErr != nil {
 		ctx.JSON(restErr.Status, restErr)
 		return
@@ -102,6 +98,10 @@ func parseUserId(ctx *gin.Context) (*int64, *utils.RestErr) {
 		return nil, utils.BadRequestError(invalidUserIdMsg)
 	}
 	return &userId, nil
+}
+
+func parseStatus(ctx *gin.Context) string {
+	return ctx.Query("status")
 }
 
 func parseUserInfo(ctx *gin.Context) (*users.User, *utils.RestErr) {

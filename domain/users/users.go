@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	emailRegex         = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
-	invalidEmailErrMsg = "The email id is not valid."
+	emailRegex          = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+	invalidEmailErrMsg  = "The email id is not valid."
 	invalidStatusErrMsg = "Invalid status '%s'. Valid Status's: %v"
 
 	usersDbDriveName            = "mysql"
@@ -25,14 +25,14 @@ const (
 
 	querySelectUserById     = "SELECT id, first_name, last_name, email, status, date_created, date_updated FROM users WHERE id=?;"
 	querySelectUserByStatus = "SELECT id, first_name, last_name, email, status, date_created, date_updated FROM users WHERE status=?;"
-	queryInsertUser         = "INSERT INTO users(first_name, last_name, email, status, password) VALUES(?, ?, ?, ?, ?);"
-	queryUpdateUser         = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
+	queryInsertUser         = "INSERT INTO users(first_name, last_name, email, status, password, date_created, date_updated) VALUES(?, ?, ?, ?, ?, ?, ?);"
+	queryUpdateUser         = "UPDATE users SET first_name=?, last_name=?, email=?, date_updated=? WHERE id=?;"
 	queryDeleteUser         = "DELETE FROM users WHERE id=?;"
 )
 
 var (
-	UserDbClient *sql.DB
-	validStatusList = []string{"Active", "Inactive"}
+	UserDbClient    *sql.DB
+	validStatusList = []string{"active", "inactive"}
 )
 
 type InvalidEmailError struct{}
@@ -42,7 +42,7 @@ func (e InvalidEmailError) Error() string {
 }
 
 type InvalidStatusError struct {
-	invalidStatus string
+	invalidStatus   string
 	validStatusList []string
 }
 
@@ -144,7 +144,7 @@ func (u *User) Create() *utils.RestErr {
 	}
 	defer stmt.Close()
 
-	result, err := stmt.Exec(u.FirstName, u.Lastname, u.Email, u.Status, u.Password)
+	result, err := stmt.Exec(u.FirstName, u.Lastname, u.Email, u.Status, u.Password, u.DateCreated, u.DateUpdated)
 	if err := u.handleQueryExecError(err); err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (u *User) Update() *utils.RestErr {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(u.FirstName, u.Lastname, u.Email, u.Id)
+	_, err = stmt.Exec(u.FirstName, u.Lastname, u.Email, u.DateUpdated, u.Id)
 	if err := u.handleQueryExecError(err); err != nil {
 		return err
 	}
@@ -237,9 +237,9 @@ func (u *User) ValidateEmail() error {
 }
 
 func (u *User) ValidateStatus() error {
-	if !utils.EntryExists(validStatusList, u.Status){
+	if !utils.EntryExists(validStatusList, u.Status) {
 		return InvalidStatusError{
-			invalidStatus:     u.Status,
+			invalidStatus:   u.Status,
 			validStatusList: validStatusList,
 		}
 	}
