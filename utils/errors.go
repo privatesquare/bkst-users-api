@@ -1,12 +1,18 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 )
 
 const (
 	missingMandatoryParamErrMsg = "Missing mandatory parameter(s) : %v"
+	invalidPasswordErrMsg       = "password should be at least 8 characters long with at least one number, one uppercase letter, one lowercase letter and one special character"
+)
+
+var (
+	InvalidPasswordError = errors.New(invalidPasswordErrMsg)
 )
 
 type RestErr struct {

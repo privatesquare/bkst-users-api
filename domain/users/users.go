@@ -198,6 +198,9 @@ func (u *User) Validate() error {
 	if err := u.ValidateEmail(); err != nil {
 		return err
 	}
+	if err := u.ValidatePassword(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -244,6 +247,10 @@ func (u *User) ValidateStatus() error {
 		}
 	}
 	return nil
+}
+
+func (u *User) ValidatePassword() error {
+	return utils.VerifyPassword(u.Password)
 }
 
 func (u *User) handleQueryExecError(err error) *utils.RestErr {
