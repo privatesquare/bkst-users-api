@@ -1,4 +1,4 @@
-package utils
+package errors
 
 import (
 	"errors"
@@ -23,12 +23,8 @@ type RestErr struct {
 	Error   string `json:"error"`
 }
 
-func NewError(message string, status int, error string) *RestErr {
-	return &RestErr{
-		Message: message,
-		Status:  status,
-		Error:   error,
-	}
+func NewError(msg string) error {
+	return errors.New(msg)
 }
 
 func BadRequestError(message string) *RestErr {
@@ -80,17 +76,17 @@ func (e MissingMandatoryParamError) Error() string {
 }
 
 type PasswordEncryptionError struct {
-	err error
+	Err error
 }
 
 func (e PasswordEncryptionError) Error() string {
-	return fmt.Sprintf(passwordEncryptionErrMsg, e.err)
+	return fmt.Sprintf(passwordEncryptionErrMsg, e.Err)
 }
 
 type PasswordDecryptionError struct {
-	err error
+	Err error
 }
 
 func (e PasswordDecryptionError) Error() string {
-	return fmt.Sprintf(passwordDecryptionErrMsg, e.err)
+	return fmt.Sprintf(passwordDecryptionErrMsg, e.Err)
 }

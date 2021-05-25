@@ -1,4 +1,4 @@
-package utils
+package slice
 
 // EntryExists checks if an entry exists in a slice of strings
 // The function returns a boolean value:

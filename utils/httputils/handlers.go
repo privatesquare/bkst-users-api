@@ -1,4 +1,4 @@
-package utils
+package httputils
 
 // Health health controller
 import (

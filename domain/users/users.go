@@ -2,23 +2,33 @@ package users
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"github.com/private-square/bkst-users-api/utils"
+	"github.com/private-square/bkst-users-api/utils/errors"
+	"github.com/private-square/bkst-users-api/utils/logger"
+	"github.com/private-square/bkst-users-api/utils/secrets"
+	"github.com/private-square/bkst-users-api/utils/slice"
+	"github.com/private-square/bkst-users-api/utils/struct"
 	"regexp"
 	"strings"
 )
 
 const (
-	emailRegex          = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
-	invalidEmailErrMsg  = "The email id is not valid."
-	invalidStatusErrMsg = "Invalid status '%s'. Valid Status's: %v"
+	emailRegex           = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+	invalidEmailErrMsg   = "The email id is not valid."
+	invalidStatusErrMsg  = "Invalid status '%s'. Valid Status's: %v"
+	InternalServerErrMsg = "Unable to process the request due to an internal error. Please contact the systems administrator"
 
-	usersDbDriveName            = "mysql"
 	usersDbDataSourceNameFormat = "%s:%s@tcp(%s:%s)/%s?charset=utf8"
 	usersDbConnErrMsg           = "Users Db connection error : %v"
-	usersDbConnSuccessMsg       = "Successfully connected to the Users database."
+	usersDbConnSuccessMsg       = "Successfully connected to the Users database"
 	usersDbEmailUniqueStr       = "email_UNIQUE"
+	usersDbPrepareStmtErrMsg    = "Error when trying to prepare a statement"
+	usersDbQueryErrMsg          = "Error when trying to run a query on the database"
+	usersDbQueryRowsErrMsg      = "Error when trying to get query rows"
+	usersDbScanRowsErrMsg       = "Error when trying to scan rows"
+	usersDbExecErrMsg           = "Error when trying to execute a statement on the database"
+	usersDbLastInsertIdErrMsg   = "Error when trying to get the last insert id"
+	usersDbRowsAffectedErrMsg   = "Error when trying to get the number of affected rows"
 
 	userNotFoundMsg     = "User with id %d was not found"
 	emailAlreadyUsedMsg = "Email id %s is already in use."
@@ -51,6 +61,7 @@ func (e InvalidStatusError) Error() string {
 }
 
 type UserDbConn struct {
+	Driver   string
 	Hostname string
 	Port     string
 	Schema   string
@@ -66,13 +77,17 @@ func (db *UserDbConn) Open() error {
 		db.Hostname,
 		db.Port,
 		db.Schema)
-	if UserDbClient, err = sql.Open(usersDbDriveName, dataSourceName); err != nil {
-		return errors.New(fmt.Sprintf(usersDbConnErrMsg, err))
+	if UserDbClient, err = sql.Open(db.Driver, dataSourceName); err != nil {
+		err = errors.NewError(fmt.Sprintf(usersDbConnErrMsg, err))
+		logger.Error(err.Error(), nil)
+		return err
 	}
 	if err := UserDbClient.Ping(); err != nil {
-		return errors.New(fmt.Sprintf(usersDbConnErrMsg, err))
+		err = errors.NewError(fmt.Sprintf(usersDbConnErrMsg, err))
+		logger.Error(err.Error(), nil)
+		return err
 	}
-	fmt.Println(usersDbConnSuccessMsg)
+	logger.Info(usersDbConnSuccessMsg)
 	return nil
 }
 
@@ -91,10 +106,11 @@ type User struct {
 	DateUpdated string `json:"dateUpdated"`
 }
 
-func (u *User) Get() *utils.RestErr {
+func (u *User) Get() *errors.RestErr {
 	stmt, err := UserDbClient.Prepare(querySelectUserById)
 	if err != nil {
-		return utils.InternalServerError(err.Error())
+		logger.Error(usersDbPrepareStmtErrMsg, err)
+		return errors.InternalServerError(InternalServerErrMsg)
 	}
 	defer stmt.Close()
 
@@ -103,28 +119,34 @@ func (u *User) Get() *utils.RestErr {
 	case err == nil:
 		return nil
 	case err == sql.ErrNoRows:
-		return utils.NotFoundError(fmt.Sprintf(userNotFoundMsg, u.Id))
+		msg := fmt.Sprintf(userNotFoundMsg, u.Id)
+		logger.Info(msg)
+		return errors.NotFoundError(msg)
 	default:
-		return utils.InternalServerError(err.Error())
+		logger.Error(usersDbQueryRowsErrMsg, err)
+		return errors.InternalServerError(err.Error())
 	}
 }
 
-func (u *User) FindByStatus() ([]User, *utils.RestErr) {
+func (u *User) FindByStatus() ([]User, *errors.RestErr) {
 	stmt, err := UserDbClient.Prepare(querySelectUserByStatus)
 	if err != nil {
-		return nil, utils.InternalServerError(err.Error())
+		logger.Error(usersDbPrepareStmtErrMsg, err)
+		return nil, errors.InternalServerError(InternalServerErrMsg)
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(u.Status)
 	if err != nil {
-		return nil, utils.InternalServerError(err.Error())
+		logger.Error(usersDbQueryErrMsg, err)
+		return nil, errors.InternalServerError(InternalServerErrMsg)
 	}
 	var users []User
 	for rows.Next() {
 		var user User
 		if err := rows.Scan(&user.Id, &user.FirstName, &user.Lastname, &user.Email, &user.Status, &user.DateCreated, &user.DateUpdated); err != nil {
-			return nil, utils.InternalServerError(err.Error())
+			logger.Error(usersDbScanRowsErrMsg, err)
+			return nil, errors.InternalServerError(InternalServerErrMsg)
 		}
 		users = append(users, user)
 	}
@@ -137,10 +159,11 @@ func (u *User) FindByStatus() ([]User, *utils.RestErr) {
 	}
 }
 
-func (u *User) Create() *utils.RestErr {
+func (u *User) Create() *errors.RestErr {
 	stmt, err := UserDbClient.Prepare(queryInsertUser)
 	if err != nil {
-		return utils.InternalServerError(err.Error())
+		logger.Error(usersDbPrepareStmtErrMsg, err)
+		return errors.InternalServerError(InternalServerErrMsg)
 	}
 	defer stmt.Close()
 
@@ -150,15 +173,17 @@ func (u *User) Create() *utils.RestErr {
 	}
 
 	if u.Id, err = result.LastInsertId(); err != nil {
-		return utils.InternalServerError(err.Error())
+		logger.Error(usersDbLastInsertIdErrMsg, err)
+		return errors.InternalServerError(InternalServerErrMsg)
 	}
 	return nil
 }
 
-func (u *User) Update() *utils.RestErr {
+func (u *User) Update() *errors.RestErr {
 	stmt, err := UserDbClient.Prepare(queryUpdateUser)
 	if err != nil {
-		return utils.InternalServerError(err.Error())
+		logger.Error(usersDbPrepareStmtErrMsg, err)
+		return errors.InternalServerError(InternalServerErrMsg)
 	}
 	defer stmt.Close()
 
@@ -170,10 +195,11 @@ func (u *User) Update() *utils.RestErr {
 	return nil
 }
 
-func (u *User) Delete() *utils.RestErr {
+func (u *User) Delete() *errors.RestErr {
 	stmt, err := UserDbClient.Prepare(queryDeleteUser)
 	if err != nil {
-		return utils.InternalServerError(err.Error())
+		logger.Error(usersDbPrepareStmtErrMsg, err)
+		return errors.InternalServerError(InternalServerErrMsg)
 	}
 	defer stmt.Close()
 
@@ -183,9 +209,12 @@ func (u *User) Delete() *utils.RestErr {
 	}
 
 	if rowsAffected, err := result.RowsAffected(); err != nil {
-		return utils.InternalServerError(err.Error())
+		logger.Error(usersDbRowsAffectedErrMsg, err)
+		return errors.InternalServerError(InternalServerErrMsg)
 	} else if rowsAffected == 0 {
-		return utils.NotFoundError(fmt.Sprintf(userNotFoundMsg, u.Id))
+		msg := fmt.Sprintf(userNotFoundMsg, u.Id)
+		logger.Info(msg)
+		return errors.NotFoundError(msg)
 	} else {
 		return nil
 	}
@@ -208,23 +237,23 @@ func (u *User) validateNotEmpty() error {
 	var missingParams []string
 
 	if strings.TrimSpace(u.FirstName) == "" {
-		missingParams = append(missingParams, utils.GetFieldTagValue(u, &u.FirstName))
+		missingParams = append(missingParams, _struct.GetFieldTagValue(u, &u.FirstName))
 	}
 	if strings.TrimSpace(u.Lastname) == "" {
-		missingParams = append(missingParams, utils.GetFieldTagValue(u, &u.Lastname))
+		missingParams = append(missingParams, _struct.GetFieldTagValue(u, &u.Lastname))
 	}
 	if strings.TrimSpace(u.Email) == "" {
-		missingParams = append(missingParams, utils.GetFieldTagValue(u, &u.Email))
+		missingParams = append(missingParams, _struct.GetFieldTagValue(u, &u.Email))
 	}
 	if strings.TrimSpace(u.Status) == "" {
-		missingParams = append(missingParams, utils.GetFieldTagValue(u, &u.Status))
+		missingParams = append(missingParams, _struct.GetFieldTagValue(u, &u.Status))
 	}
 	if strings.TrimSpace(u.Password) == "" {
-		missingParams = append(missingParams, utils.GetFieldTagValue(u, &u.Password))
+		missingParams = append(missingParams, _struct.GetFieldTagValue(u, &u.Password))
 	}
 
 	if len(missingParams) > 0 {
-		return utils.MissingMandatoryParamError(missingParams)
+		return errors.MissingMandatoryParamError(missingParams)
 	}
 
 	return nil
@@ -240,7 +269,7 @@ func (u *User) ValidateEmail() error {
 }
 
 func (u *User) ValidateStatus() error {
-	if !utils.EntryExists(validStatusList, u.Status) {
+	if !slice.EntryExists(validStatusList, u.Status) {
 		return InvalidStatusError{
 			invalidStatus:   u.Status,
 			validStatusList: validStatusList,
@@ -250,15 +279,18 @@ func (u *User) ValidateStatus() error {
 }
 
 func (u *User) ValidatePassword() error {
-	return utils.VerifyPassword(u.Password)
+	return secrets.VerifyPassword(u.Password)
 }
 
-func (u *User) handleQueryExecError(err error) *utils.RestErr {
+func (u *User) handleQueryExecError(err error) *errors.RestErr {
 	if err == nil {
 		return nil
 	} else if strings.Contains(err.Error(), usersDbEmailUniqueStr) {
-		return utils.BadRequestError(fmt.Sprintf(emailAlreadyUsedMsg, u.Email))
+		msg := fmt.Sprintf(emailAlreadyUsedMsg, u.Email)
+		logger.Info(msg)
+		return errors.BadRequestError(msg)
 	} else {
-		return utils.InternalServerError(err.Error())
+		logger.Error(usersDbExecErrMsg, err)
+		return errors.InternalServerError(InternalServerErrMsg)
 	}
 }

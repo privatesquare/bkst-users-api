@@ -1,4 +1,4 @@
-package utils
+package _struct
 
 import (
 	"reflect"

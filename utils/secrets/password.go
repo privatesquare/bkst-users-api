@@ -1,4 +1,4 @@
-package utils
+package secrets
 
 import (
 	"crypto/aes"
@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"github.com/private-square/bkst-users-api/utils/errors"
 	"io"
 	mr "math/rand"
 	"time"
@@ -54,7 +55,7 @@ func VerifyPassword(password string) error {
 	if numOfLetters > 8 && number && upper && lower && special {
 		return nil
 	} else {
-		return InvalidPasswordError
+		return errors.InvalidPasswordError
 	}
 }
 
@@ -67,11 +68,11 @@ func EncryptPassword(data, passphrase string) (string, error) {
 	block, _ := aes.NewCipher(createSHA256Hash(passphrase))
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", PasswordEncryptionError{err: err}
+		return "", errors.PasswordEncryptionError{Err: err}
 	}
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", PasswordEncryptionError{err: err}
+		return "", errors.PasswordEncryptionError{Err: err}
 	}
 	ciphertext := gcm.Seal(nonce, nonce, []byte(data), nil)
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
@@ -80,22 +81,22 @@ func EncryptPassword(data, passphrase string) (string, error) {
 func DecryptPassword(data, passphrase string) (string, error) {
 	bData, err := base64.StdEncoding.DecodeString(data)
 	if err != nil {
-		return "", PasswordDecryptionError{err: err}
+		return "", errors.PasswordDecryptionError{Err: err}
 	}
 	key := createSHA256Hash(passphrase)
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return "", PasswordDecryptionError{err: err}
+		return "", errors.PasswordDecryptionError{Err: err}
 	}
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return "", PasswordDecryptionError{err: err}
+		return "", errors.PasswordDecryptionError{Err: err}
 	}
 	nonceSize := gcm.NonceSize()
 	nonce, ciphertext := bData[:nonceSize], bData[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", PasswordDecryptionError{err: err}
+		return "", errors.PasswordDecryptionError{Err: err}
 	}
 	return string(plaintext), nil
 }

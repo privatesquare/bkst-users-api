@@ -13,3 +13,4 @@ docker-context
 
 # Others
 db-queries.md
+config.env
