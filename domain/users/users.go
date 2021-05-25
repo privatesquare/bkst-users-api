@@ -7,7 +7,7 @@ import (
 	"github.com/private-square/bkst-users-api/utils/logger"
 	"github.com/private-square/bkst-users-api/utils/secrets"
 	"github.com/private-square/bkst-users-api/utils/slice"
-	"github.com/private-square/bkst-users-api/utils/struct"
+	"github.com/private-square/bkst-users-api/utils/structutils"
 	"regexp"
 	"strings"
 )
@@ -237,19 +237,19 @@ func (u *User) validateNotEmpty() error {
 	var missingParams []string
 
 	if strings.TrimSpace(u.FirstName) == "" {
-		missingParams = append(missingParams, _struct.GetFieldTagValue(u, &u.FirstName))
+		missingParams = append(missingParams, structutils.GetFieldTagValue(u, &u.FirstName))
 	}
 	if strings.TrimSpace(u.Lastname) == "" {
-		missingParams = append(missingParams, _struct.GetFieldTagValue(u, &u.Lastname))
+		missingParams = append(missingParams, structutils.GetFieldTagValue(u, &u.Lastname))
 	}
 	if strings.TrimSpace(u.Email) == "" {
-		missingParams = append(missingParams, _struct.GetFieldTagValue(u, &u.Email))
+		missingParams = append(missingParams, structutils.GetFieldTagValue(u, &u.Email))
 	}
 	if strings.TrimSpace(u.Status) == "" {
-		missingParams = append(missingParams, _struct.GetFieldTagValue(u, &u.Status))
+		missingParams = append(missingParams, structutils.GetFieldTagValue(u, &u.Status))
 	}
 	if strings.TrimSpace(u.Password) == "" {
-		missingParams = append(missingParams, _struct.GetFieldTagValue(u, &u.Password))
+		missingParams = append(missingParams, structutils.GetFieldTagValue(u, &u.Password))
 	}
 
 	if len(missingParams) > 0 {
