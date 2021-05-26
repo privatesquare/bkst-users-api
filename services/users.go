@@ -1,7 +1,6 @@
 package services
 
 import (
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/private-square/bkst-users-api/domain/users"
 	"github.com/private-square/bkst-users-api/utils/dateutils"
 	"github.com/private-square/bkst-users-api/utils/errors"

@@ -3,11 +3,16 @@ package users
 import (
 	"database/sql"
 	"fmt"
+	"github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/private-square/bkst-users-api/utils/errors"
 	"github.com/private-square/bkst-users-api/utils/logger"
 	"github.com/private-square/bkst-users-api/utils/secrets"
 	"github.com/private-square/bkst-users-api/utils/slice"
 	"github.com/private-square/bkst-users-api/utils/structutils"
+	"io/ioutil"
+	"log"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -67,6 +72,15 @@ type UserDbConn struct {
 	Schema   string
 	Username string
 	Password string
+}
+
+func init() {
+	mysqlLogger := log.New(ioutil.Discard, "", 0)
+	err := mysql.SetLogger(mysqlLogger)
+	if err != nil {
+		logger.Error(err.Error(), nil)
+		os.Exit(1)
+	}
 }
 
 func (db *UserDbConn) Open() error {
