@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"github.com/private-square/bkst-users-api/utils/errors"
 	"github.com/private-square/bkst-users-api/utils/logger"
 	"github.com/spf13/viper"
@@ -65,7 +64,6 @@ func (c *Config) Validate() {
 	for i := 0; i < sr.NumField(); i++ {
 		if strings.TrimSpace(sr.Field(i).String()) == "" {
 			missingParams = append(missingParams, sr.Type().Field(i).Tag.Get("mapstructure"))
-			fmt.Println(os.Getenv(sr.Type().Field(i).Tag.Get("mapstructure")))
 		}
 	}
 	if len(missingParams) > 0 {

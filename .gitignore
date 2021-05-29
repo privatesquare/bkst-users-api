@@ -7,10 +7,7 @@
 
 # Executables
 bkst-users-api
-
-# Docker
-docker-context
+docker-context/bkst-users-api-linux-amd64
 
 # Others
 db-queries.md
-config.env
