@@ -26,7 +26,7 @@ jobs:
         go-version: 1.16
 
     - name: Install gox
-      run: get github.com/mitchellh/gox
+      run: go get github.com/mitchellh/gox
       
     - name: Build
       run: env CGO_ENABLED=0 gox -os="linux" -arch="amd64" -output="docker-context/${env.appName}-{{.OS}}-{{.Arch}}"
