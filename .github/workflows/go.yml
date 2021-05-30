@@ -47,4 +47,4 @@ jobs:
       with:
         push: true
         context: docker-context
-        tags: ${{ env.GITHUB_REPOSITORY }}:latest, ${{  $GITHUB_REPOSITORY }}:${{ env.version }}
+        tags: ${{ env.GITHUB_REPOSITORY }}:latest, ${{ env.GITHUB_REPOSITORY }}:${{ env.version }}
