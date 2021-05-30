@@ -11,6 +11,7 @@ on:
   workflow_dispatch:
       
 env:
+  orgName: privatesquare
   appName: bkst-users-api
   version: 1.0.0
   
@@ -47,4 +48,4 @@ jobs:
       with:
         push: true
         context: docker-context
-        tags: ${{ env.GITHUB_REPOSITORY }}:latest, ${{ env.GITHUB_REPOSITORY }}:${{ env.version }}
+        tags: ${{ env.orgName }}/${{ env.appName }}:latest, ${{ env.orgName }}/${{ env.appName }}:${{ env.version }}
