@@ -29,7 +29,7 @@ jobs:
       run: go get github.com/mitchellh/gox
       
     - name: Build
-      run: env CGO_ENABLED=0 gox -os="linux" -arch="amd64" -output="docker-context/${env.appName}-{{.OS}}-{{.Arch}}"
+      run: env CGO_ENABLED=0 gox -os="linux" -arch="amd64" -output="docker-context/${{ env.appName }}-{{.OS}}-{{.Arch}}"
 
     - name: Test
       run: go test -v ./...
@@ -46,5 +46,5 @@ jobs:
       with:
         push: true
         context: docker-context
-        tags: $GITHUB_REPOSITORY:latest, $GITHUB_REPOSITORY:${env.version}
+        tags: $GITHUB_REPOSITORY:latest, $GITHUB_REPOSITORY:${{ env.version }}
     
