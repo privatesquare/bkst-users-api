@@ -1,0 +1,50 @@
+name: Go CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - develop
+      
+env:
+  appName: bkst-users-api
+  version: 1.0.0
+  
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Install gox
+      run: get github.com/mitchellh/gox
+      
+    - name: Build
+      run: env CGO_ENABLED=0 gox -os="linux" -arch="amd64" -output="docker-context/${env.appName}-{{.OS}}-{{.Arch}}"
+
+    - name: Test
+      run: go test -v ./...
+      
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+    - name: Build and push
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        push: true
+        context: docker-context
+        tags: $GITHUB_REPOSITORY:latest, $GITHUB_REPOSITORY:${env.version}
+    
