@@ -1,4 +1,4 @@
-name: Go CI
+name: Build & Release
 
 on:
   push:
@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: '0'
     
     - name: Set up Go
       uses: actions/setup-go@v2
@@ -37,17 +39,28 @@ jobs:
       run: go test -v ./...
 
     - name: Bump version and push tag
-      id: version_tag
+      id: bump_version
       uses: anothrNick/github-tag-action@1.26.0
+      if: github.event_name != 'pull_request'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
         RELEASE_BRANCHES: master
         INITIAL_VERSION: 1.0.0
         DEFAULT_BUMP: patch
+
+    - name: Get Version for Docker tag
+      id: get_version
+      uses: bhowell2/github-substring-action@v1.0.0
+      if: github.event_name != 'pull_request'
+      with:
+        value: ${{ steps.bump_version.outputs.tag }}
+        index_of_str: "v"
+        output_name: version
       
     - name: Login to Docker Hub
       uses: docker/login-action@v1
+      if: github.event_name != 'pull_request'
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
@@ -55,7 +68,8 @@ jobs:
     - name: Build and push
       id: docker_build
       uses: docker/build-push-action@v2
+      if: github.event_name != 'pull_request'
       with:
         push: true
         context: docker-context
-        tags: ${{ env.orgName }}/${{ env.appName }}:latest, ${{ env.orgName }}/${{ env.appName }}:${{ steps.version_tag.outputs.tag }}
+        tags: ${{ env.orgName }}/${{ env.appName }}:latest, ${{ env.orgName }}/${{ env.appName }}:${{ steps.get_version.outputs.version }}
