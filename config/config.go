@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/private-square/bkst-users-api/utils/errors"
-	"github.com/private-square/bkst-users-api/utils/logger"
+	"github.com/privatesquare/bkst-go-utils/utils/errors"
+	"github.com/privatesquare/bkst-go-utils/utils/logger"
 	"github.com/spf13/viper"
 	"os"
 	"reflect"

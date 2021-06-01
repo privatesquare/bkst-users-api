@@ -3,11 +3,11 @@ package controllers
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/private-square/bkst-users-api/domain/users"
-	"github.com/private-square/bkst-users-api/services"
-	"github.com/private-square/bkst-users-api/utils/errors"
-	"github.com/private-square/bkst-users-api/utils/httputils"
-	"github.com/private-square/bkst-users-api/utils/logger"
+	"github.com/privatesquare/bkst-go-utils/utils/errors"
+	"github.com/privatesquare/bkst-go-utils/utils/httputils"
+	"github.com/privatesquare/bkst-go-utils/utils/logger"
+	"github.com/privatesquare/bkst-users-api/domain/users"
+	"github.com/privatesquare/bkst-users-api/services"
 	"net/http"
 	"strconv"
 )

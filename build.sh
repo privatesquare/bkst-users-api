@@ -12,5 +12,3 @@ go get github.com/mitchellh/gox
 env CGO_ENABLED=0 gox -os="linux" -arch="amd64" -output="${outputPath}/${imageName}-{{.OS}}-{{.Arch}}"
 
 docker build -t ${orgName}/${imageName}:${version}  docker-context --build-arg VERSION=${version}
-
-docker push ${orgName}/${imageName}:${version}
