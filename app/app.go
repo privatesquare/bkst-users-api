@@ -6,8 +6,9 @@ import (
 	"github.com/privatesquare/bkst-go-utils/utils/httputils"
 	"github.com/privatesquare/bkst-go-utils/utils/logger"
 	"github.com/privatesquare/bkst-users-api/config"
-	"github.com/privatesquare/bkst-users-api/controllers"
-	"github.com/privatesquare/bkst-users-api/domain/users"
+	"github.com/privatesquare/bkst-users-api/interfaces/db/mysql"
+	"github.com/privatesquare/bkst-users-api/interfaces/rest"
+	"github.com/privatesquare/bkst-users-api/services"
 	"os"
 )
 
@@ -25,11 +26,10 @@ const (
 )
 
 func StartApp() {
-	gin.SetMode(gin.ReleaseMode)
 	r := NewRouter()
 	SetupRoutes(r)
 
-	udb := &users.UserDbConn{
+	udb := &mysql.Cfg{
 		Driver:   config.GlobalCnf.DBDriver,
 		Hostname: config.GlobalCnf.DBHost,
 		Port:     config.GlobalCnf.DBPort,
@@ -66,12 +66,13 @@ func NewRouter() *gin.Engine {
 }
 
 func SetupRoutes(r *gin.Engine) *gin.Engine {
+	usersHandler := rest.NewUsersHandler(services.NewUsersService(mysql.NewUsersStore(mysql.UserDbClient)))
 	r.GET(apiHealthPath, httputils.Health)
-	r.GET(apiUsersPath+apiUserIdParamExt, controllers.GetUser)
-	r.GET(apiUsersPath+apiSearchPathExt, controllers.SearchUser)
-	r.POST(apiUsersPath, controllers.CreateUser)
-	r.PUT(apiUsersPath+apiUserIdParamExt, controllers.UpdateUser)
-	r.DELETE(apiUsersPath+apiUserIdParamExt, controllers.DeleteUser)
+	r.GET(apiUsersPath+apiUserIdParamExt, usersHandler.Get)
+	r.GET(apiUsersPath+apiSearchPathExt, usersHandler.Search)
+	r.POST(apiUsersPath, usersHandler.Create)
+	r.PUT(apiUsersPath+apiUserIdParamExt, usersHandler.Update)
+	r.DELETE(apiUsersPath+apiUserIdParamExt, usersHandler.Delete)
 
 	return r
 }

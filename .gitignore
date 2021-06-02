@@ -10,4 +10,5 @@ bkst-users-api
 docker-context/bkst-users-api-linux-amd64
 
 # Others
-db-queries.md
+resources/db-queries.md
+config.env
