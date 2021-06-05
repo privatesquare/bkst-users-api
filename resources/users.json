@@ -1,0 +1,14 @@
+[
+  {
+    "firstName" : "Harry",
+    "lastName" : "Potter",
+    "email": "hpotter@hogwarts.com",
+    "password": "!q6Fv-hAGK-QY6km6V*9vvH"
+  },
+  {
+    "firstName": "Hermione",
+    "lastName": "Granger",
+    "email": "hgranger@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  }
+]

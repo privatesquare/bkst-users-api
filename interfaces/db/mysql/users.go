@@ -52,7 +52,7 @@ func (us *userStore) Get(id int64) (*domain.User, *errors.RestErr) {
 	stmt, err := UserDbClient.Prepare(querySelectUserById)
 	if err != nil {
 		logger.Error(usersDbPrepareStmtErrMsg, err)
-		return nil, errors.InternalServerError(internalServerErrMsg)
+		return nil, errors.InternalServerError()
 	}
 	defer stmt.Close()
 
@@ -66,7 +66,7 @@ func (us *userStore) Get(id int64) (*domain.User, *errors.RestErr) {
 		return nil, errors.NotFoundError(msg)
 	default:
 		logger.Error(usersDbQueryRowsErrMsg, err)
-		return nil, errors.InternalServerError(err.Error())
+		return nil, errors.InternalServerError()
 	}
 }
 
@@ -74,21 +74,21 @@ func (us *userStore) FindByStatus(status string) ([]domain.User, *errors.RestErr
 	stmt, err := UserDbClient.Prepare(querySelectUserByStatus)
 	if err != nil {
 		logger.Error(usersDbPrepareStmtErrMsg, err)
-		return nil, errors.InternalServerError(internalServerErrMsg)
+		return nil, errors.InternalServerError()
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(&status)
 	if err != nil {
 		logger.Error(usersDbQueryErrMsg, err)
-		return nil, errors.InternalServerError(internalServerErrMsg)
+		return nil, errors.InternalServerError()
 	}
 	var users []domain.User
 	for rows.Next() {
 		var user domain.User
 		if err := rows.Scan(&user.Id, &user.FirstName, &user.Lastname, &user.Email, &user.Status, &user.DateCreated, &user.DateUpdated); err != nil {
 			logger.Error(usersDbScanRowsErrMsg, err)
-			return nil, errors.InternalServerError(internalServerErrMsg)
+			return nil, errors.InternalServerError()
 		}
 		users = append(users, user)
 	}
@@ -105,7 +105,7 @@ func (us *userStore) Create(u domain.User) (*domain.User, *errors.RestErr) {
 	stmt, err := UserDbClient.Prepare(queryInsertUser)
 	if err != nil {
 		logger.Error(usersDbPrepareStmtErrMsg, err)
-		return nil, errors.InternalServerError(internalServerErrMsg)
+		return nil, errors.InternalServerError()
 	}
 	defer stmt.Close()
 
@@ -116,7 +116,7 @@ func (us *userStore) Create(u domain.User) (*domain.User, *errors.RestErr) {
 
 	if u.Id, err = result.LastInsertId(); err != nil {
 		logger.Error(usersDbLastInsertIdErrMsg, err)
-		return nil, errors.InternalServerError(internalServerErrMsg)
+		return nil, errors.InternalServerError()
 	}
 	return &u, nil
 }
@@ -125,7 +125,7 @@ func (us *userStore) Update(u domain.User) (*domain.User, *errors.RestErr) {
 	stmt, err := UserDbClient.Prepare(queryUpdateUser)
 	if err != nil {
 		logger.Error(usersDbPrepareStmtErrMsg, err)
-		return nil, errors.InternalServerError(internalServerErrMsg)
+		return nil, errors.InternalServerError()
 	}
 	defer stmt.Close()
 
@@ -141,7 +141,7 @@ func (us *userStore) Delete(id int64) *errors.RestErr {
 	stmt, err := UserDbClient.Prepare(queryDeleteUser)
 	if err != nil {
 		logger.Error(usersDbPrepareStmtErrMsg, err)
-		return errors.InternalServerError(internalServerErrMsg)
+		return errors.InternalServerError()
 	}
 	defer stmt.Close()
 
@@ -152,7 +152,7 @@ func (us *userStore) Delete(id int64) *errors.RestErr {
 
 	if rowsAffected, err := result.RowsAffected(); err != nil {
 		logger.Error(usersDbRowsAffectedErrMsg, err)
-		return errors.InternalServerError(internalServerErrMsg)
+		return errors.InternalServerError()
 	} else if rowsAffected == 0 {
 		msg := fmt.Sprintf(userNotFoundMsg, id)
 		logger.Info(msg)
@@ -171,6 +171,6 @@ func (us *userStore) handleQueryExecError(u domain.User, err error) *errors.Rest
 		return errors.BadRequestError(msg)
 	} else {
 		logger.Error(usersDbExecErrMsg, err)
-		return errors.InternalServerError(internalServerErrMsg)
+		return errors.InternalServerError()
 	}
 }

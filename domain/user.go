@@ -21,8 +21,13 @@ type User struct {
 	DateUpdated string `json:"dateUpdated"`
 }
 
+const (
+	ActiveStatus = "active"
+	InactiveStatus = "inactive"
+)
+
 var (
-	validStatusList = []string{"active", "inactive"}
+	validStatusList = []string{ActiveStatus, InactiveStatus}
 )
 
 const (

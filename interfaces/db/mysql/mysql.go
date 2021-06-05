@@ -23,12 +23,12 @@ const (
 )
 
 type Cfg struct {
-	Driver   string
-	Hostname string
-	Port     string
-	Schema   string
-	Username string
-	Password string
+	Driver   string `mapstructure:"DB_DRIVER"`
+	Hostname     string `mapstructure:"DB_HOST"`
+	Port     string `mapstructure:"DB_PORT"`
+	Schema   string `mapstructure:"DB_SCHEMA"`
+	Username string `mapstructure:"DB_USERNAME"`
+	Password string `mapstructure:"DB_PASSWORD"`
 }
 
 func init() {

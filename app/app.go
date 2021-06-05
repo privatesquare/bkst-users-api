@@ -3,9 +3,9 @@ package app
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/privatesquare/bkst-go-utils/utils/config"
 	"github.com/privatesquare/bkst-go-utils/utils/httputils"
 	"github.com/privatesquare/bkst-go-utils/utils/logger"
-	"github.com/privatesquare/bkst-users-api/config"
 	"github.com/privatesquare/bkst-users-api/interfaces/db/mysql"
 	"github.com/privatesquare/bkst-users-api/interfaces/rest"
 	"github.com/privatesquare/bkst-users-api/services"
@@ -26,23 +26,9 @@ const (
 )
 
 func StartApp() {
-	r := NewRouter()
-	SetupRoutes(r)
-
-	udb := &mysql.Cfg{
-		Driver:   config.GlobalCnf.DBDriver,
-		Hostname: config.GlobalCnf.DBHost,
-		Port:     config.GlobalCnf.DBPort,
-		Schema:   config.GlobalCnf.DBSchema,
-		Username: config.GlobalCnf.DBUsername,
-		Password: config.GlobalCnf.DBPassword,
-	}
-
-	logger.Info(fmt.Sprintf(externalDBMsg, udb.Hostname, udb.Port, udb.Schema))
-	if err := udb.Open(); err != nil {
-		logger.Error("", err)
-		os.Exit(1)
-	}
+	r := httputils.NewRouter()
+	setupRoutes(r)
+	dbConnect()
 
 	logger.Info(apiServerStartingMsg)
 	logger.Info(fmt.Sprintf(apiServerStartedMsg, defaultWebServerPort))
@@ -52,20 +38,21 @@ func StartApp() {
 	}
 }
 
-func NewRouter() *gin.Engine {
+func dbConnect() {
+	cfg := &mysql.Cfg{}
+	if err := config.Load(cfg); err != nil {
+		logger.Error(err.Error(), err)
+		os.Exit(1)
+	}
 
-	gin.SetMode(gin.ReleaseMode)
-	r := gin.New()
-	r.Use(logger.GinZap())
-	r.Use(gin.Recovery())
-	r.NoRoute(httputils.NoRoute)
-	r.HandleMethodNotAllowed = true
-	r.NoMethod(httputils.MethodNotAllowed)
-
-	return r
+	logger.Info(fmt.Sprintf(externalDBMsg, cfg.Hostname, cfg.Port, cfg.Schema))
+	if err := cfg.Open(); err != nil {
+		logger.Error("", err)
+		os.Exit(1)
+	}
 }
 
-func SetupRoutes(r *gin.Engine) *gin.Engine {
+func setupRoutes(r *gin.Engine) *gin.Engine {
 	usersHandler := rest.NewUsersHandler(services.NewUsersService(mysql.NewUsersStore(mysql.UserDbClient)))
 	r.GET(apiHealthPath, httputils.Health)
 	r.GET(apiUsersPath+apiUserIdParamExt, usersHandler.Get)

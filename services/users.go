@@ -10,10 +10,6 @@ import (
 	"strings"
 )
 
-const (
-	internalServerErrMsg = "Unable to process the request due to an internal error. Please contact the systems administrator"
-)
-
 func NewUsersService(UserStore mysql.UsersStore) UsersService {
 	return &usersService{
 		UserStore: UserStore,
@@ -49,6 +45,7 @@ func (s *usersService) FindByStatus(status string) ([]domain.User, *errors.RestE
 
 func (s *usersService) Create(u domain.User) (*domain.User, *errors.RestErr) {
 	var err error
+	u.Status = domain.ActiveStatus
 	if err := u.Validate(); err != nil {
 		logger.Info(err.Error())
 		return nil, errors.BadRequestError(err.Error())
@@ -58,7 +55,7 @@ func (s *usersService) Create(u domain.User) (*domain.User, *errors.RestErr) {
 
 	if u.Password, err = secrets.EncryptPassword(u.Password, ""); err != nil {
 		logger.Error(err.Error(), nil)
-		return nil, errors.InternalServerError(internalServerErrMsg)
+		return nil, errors.InternalServerError()
 	}
 
 	user, restErr := s.UserStore.Create(u)
