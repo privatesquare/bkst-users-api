@@ -22,7 +22,7 @@ type User struct {
 }
 
 const (
-	ActiveStatus = "active"
+	ActiveStatus   = "active"
 	InactiveStatus = "inactive"
 )
 
