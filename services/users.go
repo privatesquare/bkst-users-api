@@ -5,40 +5,47 @@ import (
 	"github.com/privatesquare/bkst-go-utils/utils/errors"
 	"github.com/privatesquare/bkst-go-utils/utils/logger"
 	"github.com/privatesquare/bkst-go-utils/utils/secrets"
-	"github.com/privatesquare/bkst-users-api/domain/users"
+	"github.com/privatesquare/bkst-users-api/domain"
+	"github.com/privatesquare/bkst-users-api/interfaces/db/mysql"
 	"strings"
 )
 
-var (
-	UsersService usersServiceInterface = &usersService{}
-)
-
-type usersService struct{}
-
-type usersServiceInterface interface {
-	Get(*users.User) (*users.User, *errors.RestErr)
-	Find(*users.User) (*[]users.User, *errors.RestErr)
-	Create(*users.User) (*users.User, *errors.RestErr)
-	Update(*users.User) *errors.RestErr
-	Delete(*users.User) *errors.RestErr
+func NewUsersService(UserStore mysql.UsersStore) UsersService {
+	return &usersService{
+		UserStore: UserStore,
+	}
 }
 
-func (s *usersService) Get(u *users.User) (*users.User, *errors.RestErr) {
-	restErr := u.Get()
-	return u, restErr
+type UsersService interface {
+	Get(id int64) (*domain.User, *errors.RestErr)
+	FindByStatus(status string) ([]domain.User, *errors.RestErr)
+	Create(u domain.User) (*domain.User, *errors.RestErr)
+	Update(u domain.User) (*domain.User, *errors.RestErr)
+	Delete(id int64) *errors.RestErr
 }
 
-func (s *usersService) Find(u *users.User) (*[]users.User, *errors.RestErr) {
+type usersService struct {
+	UserStore mysql.UsersStore
+}
+
+func (s *usersService) Get(id int64) (*domain.User, *errors.RestErr) {
+	user, restErr := s.UserStore.Get(id)
+	return user, restErr
+}
+
+func (s *usersService) FindByStatus(status string) ([]domain.User, *errors.RestErr) {
+	u := domain.User{Status: status}
 	if err := u.ValidateStatus(); err != nil {
 		logger.Info(err.Error())
 		return nil, errors.BadRequestError(err.Error())
 	}
-	usersList, restErr := u.FindByStatus()
-	return &usersList, restErr
+	usersList, restErr := s.UserStore.FindByStatus(u.Status)
+	return usersList, restErr
 }
 
-func (s *usersService) Create(u *users.User) (*users.User, *errors.RestErr) {
+func (s *usersService) Create(u domain.User) (*domain.User, *errors.RestErr) {
 	var err error
+	u.Status = domain.ActiveStatus
 	if err := u.Validate(); err != nil {
 		logger.Info(err.Error())
 		return nil, errors.BadRequestError(err.Error())
@@ -48,40 +55,41 @@ func (s *usersService) Create(u *users.User) (*users.User, *errors.RestErr) {
 
 	if u.Password, err = secrets.EncryptPassword(u.Password, ""); err != nil {
 		logger.Error(err.Error(), nil)
-		return nil, errors.InternalServerError(users.InternalServerErrMsg)
+		return nil, errors.InternalServerError()
 	}
 
-	restErr := u.Create()
-	return u, restErr
+	user, restErr := s.UserStore.Create(u)
+	return user, restErr
 }
 
-func (s *usersService) Update(u *users.User) *errors.RestErr {
-	updateInfo := *u
+func (s *usersService) Update(u domain.User) (*domain.User, *errors.RestErr) {
+	updateInfo := u
 
-	if err := u.Get(); err != nil {
-		return err
+	user, restErr := s.UserStore.Get(u.Id)
+	if restErr != nil {
+		return nil, restErr
 	}
 
 	if strings.TrimSpace(updateInfo.FirstName) != "" {
-		u.FirstName = updateInfo.FirstName
+		user.FirstName = updateInfo.FirstName
 	}
 	if strings.TrimSpace(updateInfo.Lastname) != "" {
-		u.Lastname = updateInfo.Lastname
+		user.Lastname = updateInfo.Lastname
 	}
 	if strings.TrimSpace(updateInfo.Email) != "" {
-		u.Email = updateInfo.Email
-		if err := u.ValidateEmail(); err != nil {
+		user.Email = updateInfo.Email
+		if err := user.ValidateEmail(); err != nil {
 			logger.Info(err.Error())
-			return errors.BadRequestError(err.Error())
+			return nil, errors.BadRequestError(err.Error())
 		}
 	}
 
-	u.DateUpdated = dateutils.GetDateTimeNowFormat()
-	restErr := u.Update()
-	return restErr
+	user.DateUpdated = dateutils.GetDateTimeNowFormat()
+	user, restErr = s.UserStore.Update(*user)
+	return user, restErr
 }
 
-func (s *usersService) Delete(u *users.User) *errors.RestErr {
-	restErr := u.Delete()
+func (s *usersService) Delete(id int64) *errors.RestErr {
+	restErr := s.UserStore.Delete(id)
 	return restErr
 }

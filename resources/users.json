@@ -1,0 +1,92 @@
+[
+  {
+    "firstName" : "Harry",
+    "lastName" : "Potter",
+    "email": "hpotter@hogwarts.com",
+    "password": "!q6Fv-hAGK-QY6km6V*9vvH"
+  },
+  {
+    "firstName": "Hermione",
+    "lastName": "Granger",
+    "email": "hgranger@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Ron",
+    "lastName": "Weasley",
+    "email": "rweasley@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Albus",
+    "lastName": "Dumbledore",
+    "email": "adumbledore@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Severus",
+    "lastName": "Snape",
+    "email": "ssnape@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Rubeus",
+    "lastName": "Hagrid",
+    "email": "rhagrid@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Luna",
+    "lastName": "Lovegood",
+    "email": "llovegood@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Minerva",
+    "lastName": "McGonagall",
+    "email": "mmcgonagall@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Sirius",
+    "lastName": "Black",
+    "email": "sblack@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Gellert",
+    "lastName": "Grindelwald",
+    "email": "ggrindelwald@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Fred",
+    "lastName": "Weasley",
+    "email": "fweasley@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Ginny",
+    "lastName": "Weasley",
+    "email": "gweasley@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "George",
+    "lastName": "Weasley",
+    "email": "geweasley@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Cho",
+    "lastName": "Chang",
+    "email": "cchang@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  },
+  {
+    "firstName": "Draco",
+    "lastName": "Malfoy",
+    "email": "dmalfoy@hogwarts.com",
+    "password": "F8bZg$KmvEqMGKp?p%NDk3h"
+  }
+]
