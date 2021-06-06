@@ -17,7 +17,7 @@ services:
   usersapi:
     depends_on:
       - usersdb
-    image: privatesquare/bkst-users-api:1.0.0
+    image: privatesquare/bkst-users-api:1.0.2-4329c10
     restart: always
     ports:
       - 8080:8080
