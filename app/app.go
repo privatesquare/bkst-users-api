@@ -23,6 +23,7 @@ const (
 	apiUsersPath      = "/users"
 	apiUserIdParamExt = "/:userId"
 	apiSearchPathExt  = "/search"
+	apiLoginPathExt   = "/login"
 )
 
 func StartApp() {
@@ -60,6 +61,7 @@ func setupRoutes(r *gin.Engine) *gin.Engine {
 	r.POST(apiUsersPath, usersHandler.Create)
 	r.PUT(apiUsersPath+apiUserIdParamExt, usersHandler.Update)
 	r.DELETE(apiUsersPath+apiUserIdParamExt, usersHandler.Delete)
+	r.POST(apiUsersPath+apiLoginPathExt, usersHandler.Login)
 
 	return r
 }

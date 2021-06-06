@@ -31,6 +31,7 @@ type UsersHandler interface {
 	Create(ctx *gin.Context)
 	Update(ctx *gin.Context)
 	Delete(ctx *gin.Context)
+	Login(ctx *gin.Context)
 }
 
 type usersHandler struct {
@@ -63,7 +64,7 @@ func (uh *usersHandler) Search(ctx *gin.Context) {
 }
 
 func (uh *usersHandler) Create(ctx *gin.Context) {
-	u, err := uh.parseUserInfo(ctx)
+	u, err := uh.parseUser(ctx)
 	if err != nil {
 		ctx.JSON(err.Status, err)
 		return
@@ -83,7 +84,7 @@ func (uh *usersHandler) Update(ctx *gin.Context) {
 		ctx.JSON(err.Status, err)
 		return
 	}
-	user, err := uh.parseUserInfo(ctx)
+	user, err := uh.parseUser(ctx)
 	if err != nil {
 		ctx.JSON(err.Status, err)
 		return
@@ -95,6 +96,23 @@ func (uh *usersHandler) Update(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, httputils.RestMsg{Message: fmt.Sprintf(userUpdatedMsg, user.Id)})
+}
+
+func (uh *usersHandler) Login(ctx *gin.Context) {
+	usersService := services.NewUsersService(mysql.NewUsersStore(mysql.UserDbClient))
+
+	login, err := uh.parseLogin(ctx)
+	if err != nil {
+		ctx.JSON(err.Status, err)
+		return
+	}
+
+	user, restErr := usersService.Login(*login)
+	if restErr != nil {
+		ctx.JSON(restErr.Status, restErr)
+		return
+	}
+	ctx.JSON(http.StatusOK, user)
 }
 
 func (uh *usersHandler) Delete(ctx *gin.Context) {
@@ -124,11 +142,20 @@ func (uh *usersHandler) parseStatus(ctx *gin.Context) string {
 	return ctx.Query("status")
 }
 
-func (uh *usersHandler) parseUserInfo(ctx *gin.Context) (*domain.User, *errors.RestErr) {
+func (uh *usersHandler) parseUser(ctx *gin.Context) (*domain.User, *errors.RestErr) {
 	user := new(domain.User)
 	if err := ctx.ShouldBindJSON(user); err != nil {
 		logger.Info(invalidPayloadMsg)
 		return nil, errors.BadRequestError(invalidPayloadMsg)
 	}
 	return user, nil
+}
+
+func (uh *usersHandler) parseLogin(ctx *gin.Context) (*domain.Login, *errors.RestErr) {
+	login := new(domain.Login)
+	if err := ctx.ShouldBindJSON(login); err != nil {
+		logger.Info(invalidPayloadMsg)
+		return nil, errors.BadRequestError(invalidPayloadMsg)
+	}
+	return login, nil
 }

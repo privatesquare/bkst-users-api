@@ -19,14 +19,16 @@ const (
 	usersDbLastInsertIdErrMsg = "Error when trying to get the last insert id"
 	usersDbRowsAffectedErrMsg = "Error when trying to get the number of affected rows"
 
-	userNotFoundMsg     = "User with id %d was not found"
-	emailAlreadyUsedMsg = "Email id %s is already in use."
+	userNotFoundMsg      = "User with id %d was not found"
+	userEmailNotFoundMsg = "User with email %s was not found"
+	emailAlreadyUsedMsg  = "Email id %s is already in use"
 
-	querySelectUserById     = "SELECT id, first_name, last_name, email, status, date_created, date_updated FROM users WHERE id=?;"
-	querySelectUserByStatus = "SELECT id, first_name, last_name, email, status, date_created, date_updated FROM users WHERE status=?;"
-	queryInsertUser         = "INSERT INTO users(first_name, last_name, email, status, password, date_created, date_updated) VALUES(?, ?, ?, ?, ?, ?, ?);"
-	queryUpdateUser         = "UPDATE users SET first_name=?, last_name=?, email=?, date_updated=? WHERE id=?;"
-	queryDeleteUser         = "DELETE FROM users WHERE id=?;"
+	queryGetUserById     = "SELECT id, first_name, last_name, email, status, date_created, date_updated FROM users WHERE id=?;"
+	queryGetUserByStatus = "SELECT id, first_name, last_name, email, status, date_created, date_updated FROM users WHERE status=?;"
+	queryGetUserByEmail  = "SELECT id, first_name, last_name, email, status, date_created, date_updated, password FROM users WHERE email=?;"
+	queryCreateUser      = "INSERT INTO users(first_name, last_name, email, status, password, date_created, date_updated) VALUES(?, ?, ?, ?, ?, ?, ?);"
+	queryUpdateUser      = "UPDATE users SET first_name=?, last_name=?, email=?, date_updated=? WHERE id=?;"
+	queryDeleteUser      = "DELETE FROM users WHERE id=?;"
 )
 
 func NewUsersStore(db *sql.DB) UsersStore {
@@ -38,6 +40,7 @@ func NewUsersStore(db *sql.DB) UsersStore {
 type UsersStore interface {
 	Get(id int64) (*domain.User, *errors.RestErr)
 	FindByStatus(status string) ([]domain.User, *errors.RestErr)
+	FindByEmail(string) (*domain.User, *errors.RestErr)
 	Create(u domain.User) (*domain.User, *errors.RestErr)
 	Update(u domain.User) (*domain.User, *errors.RestErr)
 	Delete(id int64) *errors.RestErr
@@ -49,7 +52,7 @@ type userStore struct {
 
 func (us *userStore) Get(id int64) (*domain.User, *errors.RestErr) {
 	u := new(domain.User)
-	stmt, err := UserDbClient.Prepare(querySelectUserById)
+	stmt, err := UserDbClient.Prepare(queryGetUserById)
 	if err != nil {
 		logger.Error(usersDbPrepareStmtErrMsg, err)
 		return nil, errors.InternalServerError()
@@ -71,7 +74,7 @@ func (us *userStore) Get(id int64) (*domain.User, *errors.RestErr) {
 }
 
 func (us *userStore) FindByStatus(status string) ([]domain.User, *errors.RestErr) {
-	stmt, err := UserDbClient.Prepare(querySelectUserByStatus)
+	stmt, err := UserDbClient.Prepare(queryGetUserByStatus)
 	if err != nil {
 		logger.Error(usersDbPrepareStmtErrMsg, err)
 		return nil, errors.InternalServerError()
@@ -101,8 +104,31 @@ func (us *userStore) FindByStatus(status string) ([]domain.User, *errors.RestErr
 	}
 }
 
+func (us *userStore) FindByEmail(email string) (*domain.User, *errors.RestErr) {
+	u := new(domain.User)
+	stmt, err := UserDbClient.Prepare(queryGetUserByEmail)
+	if err != nil {
+		logger.Error(usersDbPrepareStmtErrMsg, err)
+		return nil, errors.InternalServerError()
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(&email).Scan(&u.Id, &u.FirstName, &u.Lastname, &u.Email, &u.Status, &u.DateCreated, &u.DateUpdated, &u.Password)
+	switch {
+	case err == nil:
+		return u, nil
+	case err == sql.ErrNoRows:
+		msg := fmt.Sprintf(userEmailNotFoundMsg, email)
+		logger.Info(msg)
+		return nil, errors.NotFoundError(msg)
+	default:
+		logger.Error(usersDbQueryRowsErrMsg, err)
+		return nil, errors.InternalServerError()
+	}
+}
+
 func (us *userStore) Create(u domain.User) (*domain.User, *errors.RestErr) {
-	stmt, err := UserDbClient.Prepare(queryInsertUser)
+	stmt, err := UserDbClient.Prepare(queryCreateUser)
 	if err != nil {
 		logger.Error(usersDbPrepareStmtErrMsg, err)
 		return nil, errors.InternalServerError()

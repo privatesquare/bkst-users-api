@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+const (
+	loginErrMsg = "username or password is incorrect"
+)
+
 func NewUsersService(UserStore mysql.UsersStore) UsersService {
 	return &usersService{
 		UserStore: UserStore,
@@ -22,6 +26,7 @@ type UsersService interface {
 	Create(u domain.User) (*domain.User, *errors.RestErr)
 	Update(u domain.User) (*domain.User, *errors.RestErr)
 	Delete(id int64) *errors.RestErr
+	Login(login domain.Login) (*domain.User, *errors.RestErr)
 }
 
 type usersService struct {
@@ -92,4 +97,30 @@ func (s *usersService) Update(u domain.User) (*domain.User, *errors.RestErr) {
 func (s *usersService) Delete(id int64) *errors.RestErr {
 	restErr := s.UserStore.Delete(id)
 	return restErr
+}
+
+func (s *usersService) Login(login domain.Login) (*domain.User, *errors.RestErr) {
+
+	if err := login.Validate(); err != nil {
+		logger.Info(err.Error())
+		return nil, errors.BadRequestError(err.Error())
+	}
+
+	user, restErr := s.UserStore.FindByEmail(login.Username)
+	if restErr != nil {
+		return nil, restErr
+	}
+
+	dPass, err := secrets.DecryptPassword(user.Password, "")
+	if err != nil {
+		logger.Info(err.Error())
+		return nil, errors.InternalServerError()
+	}
+
+	if login.Password != dPass {
+		return nil, errors.BadRequestError(loginErrMsg)
+	}
+
+	user.Password = ""
+	return user, nil
 }
