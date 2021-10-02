@@ -100,7 +100,7 @@ func (u *User) ValidateEmail() error {
 }
 
 func (u *User) ValidateStatus() error {
-	if !slice.EntryExists(validStatusList, u.Status) {
+	if !utils.EntryExists(validStatusList, u.Status) {
 		return InvalidStatusError{
 			invalidStatus:   u.Status,
 			validStatusList: validStatusList,
