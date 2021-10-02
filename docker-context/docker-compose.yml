@@ -14,17 +14,17 @@ services:
       MYSQL_USER: bkst-admin
       MYSQL_PASSWORD: bkstpassword
 
-  usersapi:
-    depends_on:
-      - usersdb
-    image: privatesquare/bkst-users-api:1.0.2-4329c10
-    restart: always
-    ports:
-      - 8080:8080
-    environment:
-      - DB_DRIVER=mysql
-      - DB_HOST=usersdb
-      - DB_PORT=3306
-      - DB_SCHEMA=bkstusersdb
-      - DB_USERNAME=bkst-admin
-      - DB_PASSWORD=bkstpassword
+#  usersapi:
+#    depends_on:
+#      - usersdb
+#    image: privatesquare/bkst-users-api:latest
+#    restart: always
+#    ports:
+#      - 8080:8080
+#    environment:
+#      - DB_DRIVER=mysql
+#      - DB_HOST=usersdb
+#      - DB_PORT=3306
+#      - DB_SCHEMA=bkstusersdb
+#      - DB_USERNAME=bkst-admin
+#      - DB_PASSWORD=bkstpassword
