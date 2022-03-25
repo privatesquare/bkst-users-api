@@ -1,4 +1,4 @@
-FROM alpine:3.13.4
+FROM alpine:3.13.8
 
 RUN mkdir /workspace
 
